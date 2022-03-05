@@ -1,0 +1,17 @@
+A;1;D;3;RDC;0,23;2,5;Balneo
+A;3;D;9;RDC;0,23;1,5;Logement
+D;1;E;9;RDC;0,23;1,5;Circulation
+E;2;G;3;RDC;0,2;3,5;Balcon
+E;3;H;4;RDC;0,23;1,5;Logement
+E;4;I;6;RDC;0,23;2,5;Escalier
+E;6;H;9;RDC;0,23;1,5;Logement
+A;1;D;9;R+1;0,23;1,5;Logement
+D;1;E;9;R+1;0,23;1,5;Circulation
+E;3;H;4;R+1;0,23;1,5;Logement
+E;4;I;6;R+1;0,23;2,5;Escalier
+E;6;H;9;R+1;0,23;1,5;Logement
+A;1;D;9;R+2;0,23;1,5;Logement
+D;1;E;9;R+2;0,23;1,5;Circulation
+E;3;H;4;R+2;0,23;1,5;Logement
+E;4;I;6;R+2;0,23;2,5;Escalier
+E;6;H;9;R+2;0,23;1,5;Logement

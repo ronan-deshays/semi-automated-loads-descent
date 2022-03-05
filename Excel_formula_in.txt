@@ -1,0 +1,273 @@
+# CALC_poids_propre : masse volumique (BA ou BC) * volume
+
+    = SI.MULTIPLE( 
+
+        # syntaxe : expression; valeur1; résultat1;
+        # valeurN; résultatN; avec N > 1
+
+        [@[type_élément]]; "poteau"; epaisseur_tout^2 * m_vol_BA
+            *RECHERCHEV([@etage];hauteur_etages;2;FAUX);
+            # syntaxe : valeur; table_cible; num_colonne; FAUX = valeur exacte
+
+        "poutre"; epaisseur_tout * m_vol_BA
+            *RECHERCHEV([@[CALC_idt_element]];h_poutres;6;FAUX)
+            *(
+                SI ( # SF recherche côtes X monomaille
+                    ET(
+                        [@[Y_haut]] <> [@[Y_bas]] ; 
+                        NON(
+                            ESTVIDE(
+                                [@[Y_bas]]
+                            )
+                        )
+                    );
+                    RECHERCHEV(
+                        [@[Y_haut]]; cote_Y; 2; FAUX
+                    );
+                    0
+                )
+                +
+                SI ( # SF recherche côtes Y monomaille
+                    ET([@[X_haut]] <> [@[X_bas]] ; NON(ESTVIDE([@[X_bas]])));
+                    RECHERCHEV(
+                        [@[X_haut]]; cote_X; 2; FAUX
+                    );
+                    0
+                )
+            );
+
+        "dalle"; epaisseur_tout * m_vol_BA
+            * RECHERCHEV( # SF recherche côtes X monomaille
+                [@[X_haut]]; cote_X; 2; FAUX
+            )
+            * RECHERCHEV(
+                [@[Y_haut]]; cote_Y; 2; FAUX
+            );
+            # rechercher les côtes et les retourner
+
+        "voile"; epaisseur_tout
+            *SI([@[matériau_élément]]="chanvre";m_vol_BC;m_vol_BA)
+            *RECHERCHEV([@etage];hauteur_etages;2;FAUX)
+            *(
+                SI ( # SF recherche côtes X monomaille
+                    ET(
+                        [@[Y_haut]] <> [@[Y_bas]] ; 
+                        NON(
+                            ESTVIDE(
+                                [@[Y_bas]]
+                            )
+                        )
+                    );
+                    RECHERCHEV(
+                        [@[Y_haut]]; cote_Y; 2; FAUX
+                    );
+                    0
+                )
+                +
+                SI ( # SF recherche côtes Y monomaille
+                    ET([@[X_haut]] <> [@[X_bas]] ; NON(ESTVIDE([@[X_bas]])));
+                    RECHERCHEV(
+                        [@[X_haut]]; cote_X; 2; FAUX
+                    );
+                    0
+                )
+            );
+
+        "ERREUR : non supporté";
+            # cas par défaut
+
+    )
+
+# TODO : changer nom colonnes BD sans les unités (pose pb, essayer globalement d'enlever les espaces)
+
+# CALC_surcharge_propre
+
+    = SI.MULTIPLE( 
+
+        # syntaxe : expression; valeur1; résultat1;
+        # valeurN; résultatN; avec N > 1
+
+        [@[type_élément]]; "poteau"; 0;
+
+        "poutre"; 0;
+
+        "dalle"; # G' en kN/m2 * surface
+            RECHERCHEV( # recherche G'
+                [@[CALC_idt_element]]; Reperage_Gprime_Q_par_m2; 7;FAUX
+            )
+            * RECHERCHEV( # SF recherche côtes X monomaille
+                [@[X_haut]]; cote_X; 2; FAUX
+            )
+            * RECHERCHEV(
+                [@[Y_haut]]; cote_Y; 2; FAUX
+            );
+            # rechercher les côtes et les retourner
+
+        "voile"; surcharges_voile[[#Totaux];[valeur_charge]];
+
+        "ERREUR : non supporté";
+            # cas par défaut
+
+    )
+
+# CALC_exploitation_propre
+
+    = SI.MULTIPLE( 
+
+        # syntaxe : expression; valeur1; résultat1;
+        # valeurN; résultatN; avec N > 1
+
+        [@[type_élément]]; "poteau"; 0;
+
+        "poutre"; 0;
+
+        "dalle"; # Q en kN/m2 * surface
+            RECHERCHEV( # recherche Q
+                [@[CALC_idt_element]];
+                Reperage_Gprime_Q_par_m2;8;FAUX
+            )
+            * RECHERCHEV( # SF recherche côtes X monomaille
+                [@[X_haut]]; cote_X; 2; FAUX
+            )
+            * RECHERCHEV(
+                [@[Y_haut]]; cote_Y; 2; FAUX
+            );
+            # rechercher les côtes et les retourner
+
+        "voile"; 0;
+
+        "ERREUR : non supporté";
+            # cas par défaut
+
+    )
+
+# GET_parent_G
+
+    =RECHERCHEV([@[CALC_parent_idt]];resultats[[#Tout];[CALC_idt_element]:[CALC_Q]];COLONNE([@[CALC_G]])-COLONNE([@[CALC_idt_element]])+1;FAUX)
+
+# GET_parent_Q
+
+    =RECHERCHEV([@[CALC_parent_idt]];resultats[[#Tout];[CALC_idt_element]:[CALC_Q]];COLONNE([@[CALC_Q]])-COLONNE([@[CALC_idt_element]])+1;FAUX)
+    
+# TODO : consolidation des RECHERCHEV au sein du tableau de calculs par COLONNE ([cellule de la ligne])
+
+# CALC_Lx
+
+    =MIN( # min des côtes X et Y de l'élément
+        SI (
+            ET(
+                [@[Y_haut]] <> [@[Y_bas]] ; 
+                NON(
+                    ESTVIDE(
+                        [@[Y_bas]]
+                    )
+                )
+            );
+            RECHERCHEV(
+                [@[Y_haut]]; cote_Y; 2; FAUX
+            );
+            0
+        );
+        SI (ET([@[X_haut]] <> [@[X_bas]] ; NON(ESTVIDE([@[X_bas]])));
+            RECHERCHEV(
+                [@[X_haut]]; cote_X; 2; FAUX
+            );
+            0
+        )
+    )
+
+# GET_parent_Lx
+
+    =RECHERCHEV([@[CALC_parent_idt]];resultats[[#Tout];[CALC_idt_element]:[CALC_Lx]];COLONNE([@[CALC_Lx]])-COLONNE([@[CALC_idt_element]])+1;FAUX)
+
+# GET_parent_Ly
+
+    =RECHERCHEV([@[CALC_parent_idt]];resultats[[#Tout];[CALC_idt_element]:[CALC_Ly]];COLONNE([@[CALC_Ly]])-COLONNE([@[CALC_idt_element]])+1;FAUX)
+
+# CALC_influence : formule du cours en isolant PS qui sera 
+    # récupérée de la dalle parente
+    # STABLE
+    # long terme : désactiver quand type_élé = dalle
+
+    =SI.MULTIPLE(
+
+        # syntaxe : expression; valeur1; résultat1;
+        # valeurN; résultatN; avec N > 1
+
+        [@[type_surface]]; "triangle"; [@[GET_parent_Lx]]/3;
+            # type : dalle > poutre
+
+        "trapeze"; (1-([@[GET_parent_Lx]]/[@[GET_parent_Ly]])^2/3) * [@[GET_parent_Lx]]/2;
+            # type : dalle > poutre
+
+        "rectangle"; [@[GET_parent_Lx]]*[@[GET_parent_Ly]]/2;
+            # type : dalle > poutre
+
+        "bande"; MAX([@[GET_parent_Lx]]/10;0,5);
+            # type : dalle > poutre
+
+        "droite"; [@[GET_parent_Ly]]/2;
+            # type : poutre > poteau
+            # exclusivement en structure poteau-poutre
+            # Ly a une valeur correcte car fonction de récup
+            # Ly est compatible avec cette fonction
+            # (c'est pas exactement Ly qui est récup)
+
+        "ERREUR : non supporté";
+            # cas par défaut
+            # dalle > poteau
+
+    )
+
+# CALC_report_parent_G
+
+    # surf_influ / surf_tot (MAX(Lx*Ly;Ly)) pour gérer cas poutre et dalle --> donne un ratio sans unité
+    # poids propre --> en kN
+    # donc j'obtiens une force en kN, distribuée dans tout mon élément
+
+# CALC_G
+    
+    = SI.MULTIPLE( 
+
+        # syntaxe : expression; valeur1; résultat1;
+        # valeurN; résultatN; avec N > 1
+
+        [@[type_élément]]; "poteau"; 
+            [@[CALC_report_parent_G]]+[@[CALC_poids_propre]]
+            +[@[CALC_surcharge_propre]];
+
+        "poutre"; [@[CALC_report_parent_G]]+[@[CALC_poids_propre]]
+            +[@[CALC_surcharge_propre]];
+
+        "dalle"; [@[CALC_poids_propre]]
+            +[@[CALC_surcharge_propre]];
+
+        "voile"; [@[CALC_report_parent_G]]+[@[CALC_poids_propre]]
+            +[@[CALC_surcharge_propre]];;
+
+        "ERREUR : non supporté";
+            # cas par défaut
+
+    )
+
+# CALC_Q
+    
+    = SI.MULTIPLE( 
+
+        # syntaxe : expression; valeur1; résultat1;
+        # valeurN; résultatN; avec N > 1
+
+        [@[type_élément]]; "poteau"; 
+            [@[CALC_report_parent_Q]]+[@[CALC_exploitation_propre]];
+
+        "poutre"; [@[CALC_report_parent_Q]]+[@[CALC_exploitation_propre]];
+
+        "dalle"; [@[CALC_exploitation_propre]];
+
+        "voile"; [@[CALC_report_parent_Q]]+[@[CALC_exploitation_propre]];;
+
+        "ERREUR : non supporté";
+            # cas par défaut
+
+    )
+

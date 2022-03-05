@@ -1,0 +1,110 @@
+# sous-fonction : saisie sécurisée [unstable]
+    # abandonné pour l'instant, système de vérification des 
+    # entrées utilisateur
+    # détection d'incompatibilités entre les surfaces à 
+    # implémenter
+
+    =SI(
+        OU(ESTVIDE(resultats[[Y_bas]:[X_bas]]))
+    )    
+
+# sous-fonction : masse volumique matériau actuel
+    # Warning : cas implicite par défaut : matériau non précisé implique béton armé
+
+    = SI([@[matériau_élément]]="chanvre";m_vol_BC;m_vol_BA)
+
+# sous-fonction : recherche étage actuel
+
+    = RECHERCHEV([@etage];hauteur_etages;2;FAUX);
+
+# sous-classe : ID2coordinates
+    # on notera la symétrie des fonctions qui suit la symétrie du texte source
+
+    # sous-fonction : ID2Y_haut
+
+        =GAUCHE([@[idt_surface]];1)
+
+    # sous-fonction : ID2Y_bas
+
+        =GAUCHE(DROITE([@[idt_surface]];2);1)
+
+    # sous-fonction : ID2X_haut
+
+        =DROITE(GAUCHE([@[idt_surface]];2);1)
+
+    # sous-fonction : ID2X_bas
+
+        =DROITE([@[idt_surface]];1)
+
+# sous-fonction : coord2cote
+    # recherche côtes pour dalles monomailles - STABLE
+
+    # recherche côtes Y
+
+    = SI (
+        ET(
+            [@[Y_haut]] <> [@[Y_bas]] ; 
+            NON(
+                ESTVIDE(
+                    [@[Y_bas]]
+                )
+            )
+        );
+        RECHERCHEV(
+            [@[Y_haut]]; cote_Y; 2; FAUX
+        );
+        0
+    )
+
+    # recherche côtes X
+
+    = SI (ET([@[X_haut]] <> [@[X_bas]] ; NON(ESTVIDE([@[X_bas]])));
+        RECHERCHEV(
+            [@[X_haut]]; cote_X; 2; FAUX
+        );
+        0
+    )
+
+# sous-fonction : recherche côtes pour objets multimailles
+# [NE PAS IMPLEMENTER, CONTRAIRE A LOGIQUE GLOBALE DE MAILLE PAR MAILLE]
+# PAS DE GESTION DES ELEMENTS DE LONGUEUR NULLE
+
+    # recherche côtes Y
+
+    = SOMME(
+        INDIRECT( # récupération coord cellule départ
+            "'Constantes'!X" & RECHERCHEV(
+                [@[Y_haut]]; cote_Y; 3; FAUX
+            )
+        )
+        :
+        INDIRECT( # récupération coord cellule arrivée
+            "'Constantes'!X" & RECHERCHEV(
+                [@[Y_bas]]; cote_Y; 3; FAUX
+            )
+        )
+    ) 
+        # retirer la longueur au point d'arrivée car pas inclus
+        - INDIRECT( # récupération coord cellule arrivée
+            "'Constantes'!X" & RECHERCHEV(
+                [@[Y_bas]]; cote_Y; 3; FAUX
+            )
+        )
+
+    # recherche côtes X
+
+    =SOMME(
+        INDIRECT(
+            "'Constantes'!AB" & RECHERCHEV(
+                [@[X_haut]]; cote_X; 3; FAUX
+            )
+        )
+        :
+        INDIRECT(
+            "'Constantes'!AB" & RECHERCHEV(
+                [@[X_bas]]; cote_X; 3; FAUX
+            )
+        )
+    )
+
+# TODO : long terme : généraliser la logique de fonctionnalisation en amont
