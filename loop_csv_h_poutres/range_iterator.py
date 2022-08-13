@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# this file is part of this GitHub project : https://github.com/ronan-deshays/excel-formula-parser
+# this file is part of this GitHub project : https://github.com/ronan-deshays/semi-automated-loads-descent
 
 import numpy as np
 target = open("h_poutres_sortie.csv", "w")
